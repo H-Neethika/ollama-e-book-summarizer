@@ -26,11 +26,16 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Data / models (adjust as you need)
+# Data / models 
 data/
-out/
 models/
 checkpoints/
 *.pt
 *.bin
 *.onnx
+
+# Ignore generated output files
+out/
+*.pdf
+*.xlsx
+*.md
