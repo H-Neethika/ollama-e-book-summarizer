@@ -1,0 +1,12 @@
+click
+lxml
+Pillow
+PTable
+pypdf
+text-unidecode
+html5lib
+PyPDF2
+bs4
+ebooklib
+sentence_transformers
+PyCryptodome
