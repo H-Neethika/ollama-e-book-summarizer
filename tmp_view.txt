@@ -1,0 +1,81 @@
+def make_api_request(api_base: str, endpoint: str, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Make a POST request to the specified API endpoint with detailed error handling."""
+    full_url = urljoin(api_base + "/", endpoint)
+
+    try:
+        response = requests.post(full_url, json=payload)
+        response.raise_for_status()
+        return response.json()
+
+    except requests.RequestException as e:
+        error_details = {
+            "Request URL": full_url,
+            "Request Method": "POST",
+            "Request Headers": dict(response.request.headers),
+            "Request Payload": payload,
+            "Response Status": getattr(response, 'status_code', None),
+            "Response Headers": getattr(response, 'headers', {}),
+            "Response Body": getattr(response, 'text', ''),
+            "Exception Type": type(e).__name__,
+            "Exception Message": str(e)
+        }
+        handle_error("API request failed", error_details, exit=False)
+
+    except json.JSONDecodeError as e:
+        error_details = {
+            "Request URL": full_url,
+            "Request Method": "POST",
+            "Request Headers": dict(response.request.headers),
+            "Request Payload": payload,
+            "Response Status": response.status_code,
+            "Response Headers": dict(response.headers),
+            "Raw Response": response.text,
+            "JSON Error": str(e),
+            "JSON Error Position": f"line {e.lineno}, column {e.colno}"
+        }
+        handle_error("Failed to parse JSON response", error_details, exit=False)
+
+    except Exception as e:
+        error_details = {
+            "Request URL": full_url,
+            "Request Method": "POST",
+            "Request Payload": payload,
+            "Exception Type": type(e).__name__,
+            "Exception Message": str(e),
+            "Traceback": traceback.format_exc()
+        }
+        handle_error("Unexpected error during API request", error_details, exit=False)
+
+    return None
+
+# -----------------------------
+# Text Sanitization
+# -----------------------------
+
+def sanitize_text(text: str) -> str:
+    """Sanitize the input text by replacing unwanted characters."""
+    #text = re.sub(r'!', '.', text)
+    #text = re.sub(r'%', ' percent', text)
+    return text.strip()
+
+# -----------------------------
+# Title Generation and Uniqueness
+# -----------------------------
+
+def generate_title(api_base: str, model: str, clean_text: str, title_prompt: str, config: Config) -> Optional[str]:
+    """Generate a unique title using the specified API and return only the first line."""
+    payload = {
+        "model": model,
+        "prompt": f"```{clean_text}```\n\n{title_prompt}",
+        "stream": False
+    }
+    result = make_api_request(api_base, "generate", payload)
+    if result:
+        # Split response by newlines and return only first line, stripped of whitespace
+        return result.get("response", "").strip().split('\n')[0]
+    return None
+
+def get_unique_title(original_title: str, clean_text: str, previous_original_title: str, api_base: str, title_prompt: str, config: Config) -> Tuple[str, bool]:
+    """Ensure the title is unique, generate a new one if necessary."""
+    if original_title and original_title != previous_original_title:
+        return original_title, False

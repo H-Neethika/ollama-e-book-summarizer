@@ -1,0 +1,70 @@
+name: Integration (Azure VM + Ollama)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+
+jobs:
+  e2e:
+    runs-on: [ self-hosted, linux, X64, azure-ollama ]
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Create venv and install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests PyYAML streamlit sentence_transformers reportlab
+
+      - name: Verify Ollama API and pull model
+        env:
+          OLLAMA_HOST: http://localhost:11434
+        run: |
+          # Ensure Ollama is reachable (should already be installed and running on the VM)
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:11434/api/tags >/dev/null; then
+              echo "Ollama API reachable"; break; fi; echo "waiting for Ollama..."; sleep 2; done
+          curl -sf http://localhost:11434/api/tags || { echo "Ollama not reachable"; exit 1; }
+          # Pull model idempotently
+          ollama pull gemma:2b || true
+          ollama list | grep -i gemma || echo "gemma model not listed yet"
+
+      - name: Generate sample PDF
+        run: |
+          source .venv/bin/activate
+          mkdir -p tmp
+          python scripts/gen_sample_pdf.py tmp/sample.pdf
+          ls -l tmp
+
+      - name: Run pipeline
+        env:
+          EBOOKSUM_ENV: dev
+          EBOOKSUM_VERBOSE: '1'
+        run: |
+          source .venv/bin/activate
+          python -m src.cli.pipeline_cli tmp/sample.pdf --env dev --model gemma:2b --prompt bnotes
+
+      - name: Show run outputs
+        run: |
+          echo "=== Runs directory ==="
+          find runs -maxdepth 3 -type f -name 'run_manifest.json' -print -exec cat {} \; || true
+          echo "=== Metrics tail ==="
+          find runs -maxdepth 3 -type f -name 'metrics.jsonl' -print -exec tail -n 5 {} \; || true
+
+      - name: Upload artifact (runs)
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-runs
+          path: runs
+          if-no-files-found: warn
+

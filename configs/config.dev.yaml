@@ -1,0 +1,8 @@
+env: dev
+api_base: http://localhost:11434/api
+model: gemma:2b
+prompt_alias: bnotes
+output_root: runs
+continue_processing: false
+verbose: false
+
