@@ -6,6 +6,43 @@ import streamlit as st
 from src.pipeline.config import load_config
 from src.pipeline.run_pipeline import run_pipeline
 
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import inch
+from textwrap import wrap
+from io import BytesIO
+import pdfkit
+import markdown2
+
+project_root = Path(__file__).parent
+wkhtmltopdf_path = project_root / "wkhtmltopdf.exe"
+
+def markdown_to_pdf(text: str) -> BytesIO:
+    html_content = markdown2.markdown(text, extras=["fenced-code-blocks", "tables"])
+    html_template = f"""
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; }}
+        h1, h2, h3, h4 {{ color: #222; }}
+        ul {{ margin-left: 20px; }}
+        li {{ margin-bottom: 5px; }}
+        p {{ line-height: 1.5; }}
+      </style>
+    </head>
+    <body>
+      {html_content}
+    </body>
+    </html>
+    """
+
+    config = pdfkit.configuration(wkhtmltopdf=str(wkhtmltopdf_path))
+
+    pdf_bytes = pdfkit.from_string(html_template, False, configuration=config)
+    return BytesIO(pdf_bytes)
+
 
 st.title("📚 Ebook Summarizer")
 
@@ -46,8 +83,23 @@ if uploaded_file:
         st.success("🎉 Summarization Complete!")
         manifest = result.get("manifest", {})
         md_path = manifest.get("artifacts", {}).get("summary_markdown")
+
+
         if md_path and Path(md_path).exists():
             with open(md_path, "r", encoding="utf-8") as md:
-                st.markdown(md.read(), unsafe_allow_html=True)
+                summary_text = md.read()
+                st.markdown(summary_text, unsafe_allow_html=True)
+
+                # Generate styled PDF
+                pdf_buffer = markdown_to_pdf(summary_text)
+
+                st.download_button(
+                    label="⬇️ Export Summary",
+                    data=pdf_buffer,
+                    file_name="summary.pdf",
+                    mime="application/pdf"
+                )
+
+
         else:
             st.info("Markdown summary not found in artifacts.")
