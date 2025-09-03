@@ -10,3 +10,9 @@ bs4
 ebooklib
 sentence_transformers
 PyCryptodome
+requests
+PyYAML
+streamlit
+reportlab
+pdfkit
+markdown2

@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [ v3.0 ]
+  pull_request:
+
+jobs:
+  sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install requests PyYAML pytest
+
+      - name: Sanity imports and config
+        run: |
+          python - << 'PY'
+          import importlib
+          for m in ['book2text','sum','src.pipeline.config','src.pipeline.run_pipeline','src.pipeline.healthchecks']:
+              importlib.import_module(m)
+          from src.pipeline.config import load_config
+          c = load_config('dev')
+          print('env=', c.env, 'model=', c.model, 'prompt=', c.prompt_alias)
+          PY
+
+      - name: Run unit tests
+        run: |
+          pytest -q

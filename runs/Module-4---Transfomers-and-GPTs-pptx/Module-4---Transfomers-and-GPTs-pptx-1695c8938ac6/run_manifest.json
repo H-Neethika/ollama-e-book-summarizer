@@ -1,0 +1,23 @@
+{
+  "run_id": "Module-4---Transfomers-and-GPTs-pptx-1695c8938ac6",
+  "created_at": "2025-09-03T08:25:37Z",
+  "env": "dev",
+  "input_file": "E:\\7thSemi\\Project\\ollama-e-book-summarizer\\.streamlit_uploads\\Module #4 - Transfomers and GPTs.pptx.pdf",
+  "input_sha256": "a389d4521801a6db4d8b0fb8d78b88e05337f54b67dd95cc8a80e3242c954408",
+  "input_bytes": 545657,
+  "pipeline_config_hash": "c1a53c9174944cc79729e98f83aa49ff485bd8e312835b7e32b53043f584cac1",
+  "model": "gemma:2b",
+  "prompt_alias": "bnotes",
+  "api_base": "http://localhost:11434/api",
+  "git_commit": "18a5ded68cc225909ddff780643c2cbff8d4a732",
+  "artifacts": {
+    "processed_csv": "runs\\Module-4---Transfomers-and-GPTs-pptx\\Module-4---Transfomers-and-GPTs-pptx-1695c8938ac6\\Module-4---Transfomers-and-GPTs-pptx_processed.csv",
+    "split_dir": "runs\\Module-4---Transfomers-and-GPTs-pptx\\Module-4---Transfomers-and-GPTs-pptx-1695c8938ac6\\split",
+    "raw_csv": "runs\\Module-4---Transfomers-and-GPTs-pptx\\Module-4---Transfomers-and-GPTs-pptx-1695c8938ac6\\Module-4---Transfomers-and-GPTs-pptx.csv",
+    "summary_markdown": "runs\\Module-4---Transfomers-and-GPTs-pptx\\Module-4---Transfomers-and-GPTs-pptx-1695c8938ac6\\Module-4---Transfomers-and-GPTs-pptx_gemma_2b.md",
+    "summary_csv": "runs\\Module-4---Transfomers-and-GPTs-pptx\\Module-4---Transfomers-and-GPTs-pptx-1695c8938ac6\\Module-4---Transfomers-and-GPTs-pptx_gemma_2b.csv"
+  },
+  "extras": {
+    "summarize_config_sha256": "727495e8e54cd834866dcf6bdef60776eb4015e9aa206c36f15083eb1aee2278"
+  }
+}
