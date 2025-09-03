@@ -56,6 +56,14 @@ def run_pipeline(input_file: str, cfg: PipelineConfig) -> Dict[str, Any]:
     pipeline_cfg_hash = sha256_text(
         f"env={cfg.env}|api_base={cfg.api_base}|model={cfg.model}|prompt={cfg.prompt_alias}|output={cfg.output_root}"
     )
+    # Try to capture git commit for reproducibility
+    git_commit = ""
+    try:
+        import subprocess
+        git_commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=str(ROOT)).decode().strip()
+    except Exception:
+        git_commit = ""
+
     manifest = RunManifest(
         run_id=run_id,
         created_at=time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
@@ -67,6 +75,7 @@ def run_pipeline(input_file: str, cfg: PipelineConfig) -> Dict[str, Any]:
         model=cfg.model,
         prompt_alias=cfg.prompt_alias,
         api_base=cfg.api_base,
+        git_commit=git_commit,
     )
 
     # Step 1: Extract + chunk to CSV
@@ -98,6 +107,13 @@ def run_pipeline(input_file: str, cfg: PipelineConfig) -> Dict[str, Any]:
     # Step 2: Summarize via Ollama
     t2 = time.perf_counter()
     s_cfg = SummarizeConfig()  # uses _config.yaml for prompts
+    # Record summarizer config hash for traceability
+    try:
+        sum_cfg_path = ROOT / "_config.yaml"
+        if sum_cfg_path.exists():
+            manifest.extras["summarize_config_sha256"] = sha256_file(sum_cfg_path)
+    except Exception:
+        pass
     model = cfg.model
     model_safe = sanitize_model_for_filename(model)
     markdown_file = run_root / f"{book_name}_{model_safe}.md"
@@ -134,4 +150,3 @@ def run_pipeline(input_file: str, cfg: PipelineConfig) -> Dict[str, Any]:
         "run_dir": str(run_root),
         "manifest": asdict(manifest),
     }
-

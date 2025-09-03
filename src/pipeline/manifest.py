@@ -38,6 +38,7 @@ class RunManifest:
     model: str
     prompt_alias: str
     api_base: str
+    git_commit: str = ""
     artifacts: Dict[str, str] = field(default_factory=dict)
     extras: Dict[str, Any] = field(default_factory=dict)
 
@@ -54,4 +55,3 @@ def compute_run_id(book_name: str, input_hash: str, model: str, prompt_alias: st
     seed = f"{book_name}|{input_hash[:12]}|{model}|{prompt_alias}"
     digest = sha256_text(seed)[:12]
     return f"{book_name}-{digest}"
-

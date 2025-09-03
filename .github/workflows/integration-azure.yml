@@ -3,7 +3,7 @@ name: Integration (Azure VM + Ollama)
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ v3.0 ]
 
 jobs:
   e2e:
