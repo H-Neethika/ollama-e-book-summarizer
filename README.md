@@ -20,8 +20,8 @@ A local, privacy-friendly tool to summarize books and research PDFs using the li
 ### 1. Clone the repository & create a virtual environment
 
 ```bash
-git clone https://github.com/your-username/ollama-ebook-summary
-cd ollama-ebook-summary
+git clone https://github.com/H-Neethika/ollama-e-book-summarizer.git
+cd ollama-e-book-summarizer
 python -m venv venv
 venv\Scripts\activate  # for Windows
 # OR
