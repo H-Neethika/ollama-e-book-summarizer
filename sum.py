@@ -21,6 +21,9 @@ class Config:
         self.prompts = self.config.get('prompts', {})
         self.title_prompt = self.config.get('title_generation', {}).get('prompt', "Default title prompt.")
         self.defaults = self.config.get('defaults', {})
+        # Backend selection and transformers settings (optional)
+        self.backend = self.config.get('backend', 'ollama')
+        self.transformers = self.config.get('transformers', {})
 
     @staticmethod
     def load_config(config_path: Path) -> dict:
@@ -125,6 +128,106 @@ def make_api_request(api_base: str, endpoint: str, payload: Dict[str, Any]) -> O
         handle_error("Unexpected error during API request", error_details, exit=False)
 
     return None
+
+# -----------------------------
+# Transformers + LoRA backend (optional)
+# -----------------------------
+
+_hf_gen = None  # cached generator instance
+
+def _resolve_dtype(dtype_str: str):
+    try:
+        import torch
+    except Exception:
+        return None
+    if not dtype_str or dtype_str == 'auto':
+        return None
+    m = {
+        'float16': torch.float16,
+        'bfloat16': torch.bfloat16,
+        'float32': torch.float32,
+    }
+    return m.get(str(dtype_str).lower())
+
+
+class LocalHFGenerator:
+    def __init__(self, base_model: str, lora_path: str, dtype: Optional[str] = 'auto', device: Optional[str] = 'auto'):
+        try:
+            from transformers import AutoModelForCausalLM, AutoTokenizer
+            from peft import PeftModel
+        except Exception as e:
+            raise RuntimeError("Missing transformers/peft. Please install: pip install transformers peft accelerate torch") from e
+
+        import torch
+
+        dtype_resolved = _resolve_dtype(dtype)
+        self.device = device or 'auto'
+
+        # Load base model/tokenizer
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(base_model, use_fast=True)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load tokenizer for base model '{base_model}'. Place it locally or ensure access.") from e
+
+        try:
+            self.model = AutoModelForCausalLM.from_pretrained(
+                base_model,
+                torch_dtype=dtype_resolved,
+                device_map=self.device if self.device != 'cpu' else None,
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to load base model '{base_model}'. Place it locally or ensure access.") from e
+
+        # Apply LoRA adapter
+        try:
+            self.model = PeftModel.from_pretrained(self.model, lora_path)
+        except Exception as e:
+            raise RuntimeError(f"Failed to load LoRA adapter from '{lora_path}'. Ensure path is correct and contains PEFT weights.") from e
+
+        # Ensure pad token setup for generation if missing
+        if self.tokenizer.pad_token is None and self.tokenizer.eos_token is not None:
+            self.tokenizer.pad_token = self.tokenizer.eos_token
+
+        self.model.eval()
+
+    def generate(self, prompt: str, max_new_tokens: int = 512, temperature: float = 0.5, top_p: float = 0.95, repetition_penalty: float = 1.1) -> str:
+        import torch
+        inputs = self.tokenizer(prompt, return_tensors='pt')
+        if self.device != 'cpu':
+            inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+        with torch.no_grad():
+            output_ids = self.model.generate(
+                **inputs,
+                max_new_tokens=max_new_tokens,
+                do_sample=True,
+                temperature=temperature,
+                top_p=top_p,
+                repetition_penalty=repetition_penalty,
+                pad_token_id=self.tokenizer.pad_token_id,
+                eos_token_id=self.tokenizer.eos_token_id,
+            )
+        text = self.tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        # Return only the generated continuation if the model echoes the prompt
+        if text.startswith(prompt):
+            return text[len(prompt):].strip()
+        return text.strip()
+
+
+def get_hf_generator(cfg: Config) -> LocalHFGenerator:
+    global _hf_gen
+    if _hf_gen is None:
+        t = cfg.transformers or {}
+        base_model = t.get('base_model', '')
+        lora_path = t.get('lora_path', '')
+        if not base_model or not lora_path:
+            raise RuntimeError("Transformers backend requires 'transformers.base_model' and 'transformers.lora_path' in _config.yaml")
+        _hf_gen = LocalHFGenerator(
+            base_model=base_model,
+            lora_path=lora_path,
+            dtype=t.get('dtype', 'auto'),
+            device=t.get('device', 'auto'),
+        )
+    return _hf_gen
 
 # -----------------------------
 # Text Sanitization
@@ -248,20 +351,35 @@ def process_entry(clean_text: str, title: str, config: Config, previous_original
     else:
         prompt = config.get_prompt(prompt_alias)
 
-    payload = {
-        "model": model,
-        "prompt": f"```{clean_text}```\n\n{prompt}",
-        "stream": False
-    }
+    full_prompt = f"```{clean_text}```\n\n{prompt}"
 
     start_time = time.time()
-    response_json = make_api_request(api_base, "generate", payload)
-    end_time = time.time()
-
-    if response_json:
-        output = response_json.get("response", "").strip()
+    output = None
+    if str(getattr(config, 'backend', 'ollama')).lower() == 'transformers':
+        try:
+            gen = get_hf_generator(config)
+            tcfg = config.transformers or {}
+            output = gen.generate(
+                full_prompt,
+                max_new_tokens=int(tcfg.get('max_new_tokens', 512)),
+                temperature=float(tcfg.get('temperature', 0.5)),
+                top_p=float(tcfg.get('top_p', 0.95)),
+                repetition_penalty=float(tcfg.get('repetition_penalty', 1.1)),
+            )
+        except Exception as e:
+            output = f"Error: Local transformers backend failed: {e}"
     else:
-        output = "Error: Failed to generate output."
+        payload = {
+            "model": model,
+            "prompt": full_prompt,
+            "stream": False
+        }
+        response_json = make_api_request(api_base, "generate", payload)
+        if response_json:
+            output = response_json.get("response", "").strip()
+        else:
+            output = "Error: Failed to generate output."
+    end_time = time.time()
     
     output = bold_text_before_colon(output)
     elapsed_time = end_time - start_time
@@ -581,13 +699,14 @@ def main():
     parser = argparse.ArgumentParser(description="Process and summarize text or CSV files using a specified model.", add_help=False)
 
     # Optional Arguments
-    parser.add_argument('-m', '--model', default=config.defaults.get('summary', 'DEFAULT_SUMMARY_MODEL'), help='Model name to use for generation')
+    parser.add_argument('-m', '--model', default=config.defaults.get('summary', 'DEFAULT_SUMMARY_MODEL'), help='Model name to use for generation (Ollama backend)')
     parser.add_argument('-c', '--csv', action='store_true', help='Process a CSV file')
     parser.add_argument('-t', '--txt', action='store_true', help='Process a text file')
     parser.add_argument('--help', action='store_true', help='Show help message and exit')
     parser.add_argument('--continue', action='store_true', help='Continue processing from last processed row')
     parser.add_argument('-p', '--prompt', default=config.defaults.get('prompt', 'DEFAULT_PROMPT_ALIAS'), help='Alias of the prompt to use from config')
     parser.add_argument('-v', '--verbose', action='store_true', help='Display markdown output as it is generated')
+    parser.add_argument('--backend', default=config.backend, choices=['ollama', 'transformers'], help='Summarization backend to use')
     parser.add_argument('input_file', nargs='?', help='Input file path')
 
     args = parser.parse_args()
@@ -607,6 +726,8 @@ def main():
     input_file = args.input_file
     prompt_alias = args.prompt
     api_base = "http://localhost:11434/api"
+    # Allow overriding backend from CLI
+    config.backend = args.backend
     ptitle = config.title_prompt
     should_continue = getattr(args, 'continue', False)
 

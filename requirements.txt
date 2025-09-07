@@ -16,3 +16,8 @@ streamlit
 reportlab
 pdfkit
 markdown2
+# Optional: required for the Transformers+LoRA backend
+# transformers
+# peft
+# accelerate
+# torch

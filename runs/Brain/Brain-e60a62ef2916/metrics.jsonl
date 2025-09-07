@@ -1,0 +1,3 @@
+{"ts": "2025-09-07T09:02:15.847036+00:00", "event": "extract:start", "data": {"output_dir": "runs/Brain/Brain-e60a62ef2916/split", "csv": "runs/Brain/Brain-e60a62ef2916/Brain.csv"}}
+{"ts": "2025-09-07T09:06:29.218815+00:00", "event": "extract:end", "data": {"duration_s": 232.786}}
+{"ts": "2025-09-07T09:06:29.231137+00:00", "event": "summarize:start", "data": {"model": "gemma:2b", "prompt": "bnotes"}}

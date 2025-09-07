@@ -63,6 +63,38 @@ Once running, open in your browser at:
 
 ---
 
+## 🔁 Using a LoRA Adapter (Transformers Backend)
+
+If you want to use a local LoRA adapter (e.g., `gemma2b-cnn-lora`):
+
+- Place the adapter folder locally (e.g., `./gemma2b-cnn-lora`).
+- Install optional deps: `pip install transformers peft accelerate torch`.
+- Edit `_config.yaml`:
+  - Set `backend: transformers`.
+  - Under `transformers:`, set `base_model` (repo id or local path) and `lora_path` (your adapter folder).
+
+Example `_config.yaml` snippet:
+
+```
+backend: transformers
+transformers:
+  base_model: google/gemma-2b   # or a local path
+  lora_path: ./gemma2b-cnn-lora
+  max_new_tokens: 512
+  temperature: 0.5
+  top_p: 0.95
+  repetition_penalty: 1.1
+  dtype: auto
+  device: auto
+```
+
+Notes:
+- The Streamlit app and CLI will automatically use the selected backend. No other changes required.
+- Keep `backend: ollama` to use the default Ollama flow.
+- Loading models without internet requires you to have the base model and adapter available locally.
+
+---
+
 ## 📂 Output
 
 After processing, your output will be saved in:
@@ -105,5 +137,4 @@ Why 2000 tokens?
 
 - Model: [Gemma 2B](https://ollama.com/library/gemma) via Ollama
 - Inspired by open-source research summarization workflows
-
 
