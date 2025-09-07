@@ -15,6 +15,7 @@ from io import BytesIO
 import pdfkit
 import markdown2
 import yaml
+import shutil
 
 project_root = Path(__file__).parent
 wkhtmltopdf_path = project_root / "wkhtmltopdf.exe"
@@ -39,8 +40,9 @@ def markdown_to_pdf(text: str) -> BytesIO:
     </html>
     """
 
-    config = pdfkit.configuration(wkhtmltopdf=str(wkhtmltopdf_path))
-
+    # Prefer bundled .exe on Windows; otherwise auto-detect wkhtmltopdf in PATH
+    wk_bin = str(wkhtmltopdf_path) if wkhtmltopdf_path.exists() else shutil.which("wkhtmltopdf")
+    config = pdfkit.configuration(wkhtmltopdf=wk_bin) if wk_bin else None
     pdf_bytes = pdfkit.from_string(html_template, False, configuration=config)
     return BytesIO(pdf_bytes)
 

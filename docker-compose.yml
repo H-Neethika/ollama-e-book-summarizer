@@ -12,8 +12,17 @@ services:
     environment:
       - EBOOKSUM_ENV=dev
       - EBOOKSUM_API_BASE=http://ollama:11434/api
+      - HF_HOME=/data/hf
+      - TRANSFORMERS_CACHE=/data/transformers
+      # Default backend is Ollama; switch in UI for Transformers+LoRA
+      - EBOOKSUM_MODEL=gemma:2b
+      - EBOOKSUM_PROMPT=bnotes
     volumes:
       - ./runs:/app/runs
+      - ./models:/models
+      - ./gemma2b-cnn-lora:/app/gemma2b-cnn-lora
+      - hf-cache:/data/hf
+      - hf-transformers:/data/transformers
     ports:
       - "8501:8501"
     depends_on:
@@ -21,4 +30,5 @@ services:
 
 volumes:
   ollama-data:
-
+  hf-cache:
+  hf-transformers:
