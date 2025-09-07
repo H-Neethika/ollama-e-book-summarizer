@@ -1,0 +1,23 @@
+{
+  "run_id": "2411-07586v1-d4591b4bc6fd",
+  "created_at": "2025-09-07T09:10:16Z",
+  "env": "dev",
+  "input_file": "D:\\7th sem\\Advance AI\\Medical_Textbooks_Summarization\\ollama-ebook-summary\\.streamlit_uploads\\2411.07586v1.pdf",
+  "input_sha256": "aa52b3ea476bc9c24ef7ab1158bbc749813edecfbe0e1f50cdf37e169d22557d",
+  "input_bytes": 1100060,
+  "pipeline_config_hash": "c1a53c9174944cc79729e98f83aa49ff485bd8e312835b7e32b53043f584cac1",
+  "model": "gemma:2b",
+  "prompt_alias": "bnotes",
+  "api_base": "http://localhost:11434/api",
+  "git_commit": "e032834a49f5366aafece7e200b3044cc39ab552",
+  "artifacts": {
+    "processed_csv": "runs\\2411-07586v1\\2411-07586v1-d4591b4bc6fd\\2411-07586v1_processed.csv",
+    "split_dir": "runs\\2411-07586v1\\2411-07586v1-d4591b4bc6fd\\split",
+    "raw_csv": "runs\\2411-07586v1\\2411-07586v1-d4591b4bc6fd\\2411-07586v1.csv",
+    "summary_markdown": "runs\\2411-07586v1\\2411-07586v1-d4591b4bc6fd\\2411-07586v1_gemma_2b.md",
+    "summary_csv": "runs\\2411-07586v1\\2411-07586v1-d4591b4bc6fd\\2411-07586v1_gemma_2b.csv"
+  },
+  "extras": {
+    "summarize_config_sha256": "727495e8e54cd834866dcf6bdef60776eb4015e9aa206c36f15083eb1aee2278"
+  }
+}

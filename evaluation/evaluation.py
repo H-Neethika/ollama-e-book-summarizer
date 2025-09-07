@@ -3,6 +3,7 @@ from rouge import Rouge
 from nltk.translate.bleu_score import sentence_bleu, SmoothingFunction
 from bert_score import score as bert_score
 import numpy as np
+import json
 
 # Load files
 model_df = pd.read_csv("book_gemma_2b.csv")
@@ -52,11 +53,22 @@ merged_df["BERT-P"] = bert_p
 merged_df["BERT-R"] = bert_r
 merged_df["BERT-F1"] = bert_f1
 
-# Save detailed results
-merged_df.to_csv("summary_evaluation_detailed.csv", index=False)
+# Print overall averages
+avg_bleu = float(np.mean(bleu_scores))
+avg_rouge_l = float(np.mean(rouge_l_scores))
+avg_bert_f1 = float(np.mean(bert_f1))
 
 # Print overall averages
 print("\n=== AVERAGE SCORES ===")
 print(f"BLEU      : {np.mean(bleu_scores):.4f}")
 print(f"ROUGE-L   : {np.mean(rouge_l_scores):.4f}")
 print(f"BERTScore-F1 : {np.mean(bert_f1):.4f}")
+
+# Save averages to JSON (instead of CSV)
+averages = {
+    "BLEU": round(avg_bleu, 4),
+    "ROUGE-L": round(avg_rouge_l, 4),
+    "BERTScore-F1": round(avg_bert_f1, 4)
+}
+with open("summary_evaluation_averages.json", "w", encoding="utf-8") as f:
+    json.dump(averages, f, indent=2)
