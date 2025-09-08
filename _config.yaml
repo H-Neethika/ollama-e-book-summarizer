@@ -31,7 +31,7 @@ prompts:
     prompt: write a few dozen quotes inspired by the provided text
 title_generation:
   prompt: Write 8-11 words describing this text.
-backend: transformers
+backend: ollama
 transformers:
   base_model: google/gemma-2b
   lora_path: ./gemma2b-cnn-lora
