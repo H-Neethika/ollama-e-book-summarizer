@@ -8,7 +8,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# System packages: wkhtmltopdf for PDF export, fonts, git (optional)
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        wkhtmltopdf \

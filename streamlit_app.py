@@ -16,6 +16,7 @@ import pdfkit
 import markdown2
 import yaml
 import shutil
+import platform
 
 project_root = Path(__file__).parent
 wkhtmltopdf_path = project_root / "wkhtmltopdf.exe"
@@ -40,10 +41,24 @@ def markdown_to_pdf(text: str) -> BytesIO:
     </html>
     """
 
-    # Prefer bundled .exe on Windows; otherwise auto-detect wkhtmltopdf in PATH
-    wk_bin = str(wkhtmltopdf_path) if wkhtmltopdf_path.exists() else shutil.which("wkhtmltopdf")
-    config = pdfkit.configuration(wkhtmltopdf=wk_bin) if wk_bin else None
-    pdf_bytes = pdfkit.from_string(html_template, False, configuration=config)
+    # Use bundled .exe only on Windows; otherwise auto-detect in PATH
+    is_windows = platform.system().lower().startswith("win")
+    wk_bin = None
+    if is_windows and wkhtmltopdf_path.exists():
+        wk_bin = str(wkhtmltopdf_path)
+    else:
+        wk_bin = shutil.which("wkhtmltopdf")
+    if wk_bin:
+        config = pdfkit.configuration(wkhtmltopdf=wk_bin)
+        pdf_bytes = pdfkit.from_string(html_template, False, configuration=config)
+    else:
+        # Let pdfkit try default, or raise a clear error if missing
+        try:
+            pdf_bytes = pdfkit.from_string(html_template, False)
+        except OSError as e:
+            raise FileNotFoundError(
+                "wkhtmltopdf not found. Install it (e.g., 'sudo apt-get install wkhtmltopdf' on Linux, 'brew install wkhtmltopdf' on macOS)"
+            ) from e
     return BytesIO(pdf_bytes)
 
 
