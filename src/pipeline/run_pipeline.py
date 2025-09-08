@@ -38,11 +38,15 @@ def run_pipeline(input_file: str, cfg: PipelineConfig) -> Dict[str, Any]:
     if input_path.suffix.lower() not in {".pdf", ".epub"}:
         raise ValueError("Only .pdf and .epub inputs are supported")
 
-    # Healthcheck Ollama
-    ok, msg = check_ollama(cfg.api_base, cfg.model)
-    logger.info(msg)
-    if not ok:
-        raise RuntimeError(msg)
+    # Determine summarization backend from _config.yaml used by sum.py
+    # Only perform Ollama healthcheck when using the Ollama backend.
+    s_cfg = SummarizeConfig()  # reads _config.yaml
+    backend = str(getattr(s_cfg, "backend", "ollama")).lower()
+    if backend == "ollama":
+        ok, msg = check_ollama(cfg.api_base, cfg.model)
+        logger.info(msg)
+        if not ok:
+            raise RuntimeError(msg)
 
     # Prepare run directory
     book_name = re.sub(r"[^\w\-]+", "-", input_path.stem)
@@ -106,7 +110,7 @@ def run_pipeline(input_file: str, cfg: PipelineConfig) -> Dict[str, Any]:
 
     # Step 2: Summarize via Ollama
     t2 = time.perf_counter()
-    s_cfg = SummarizeConfig()  # uses _config.yaml for prompts
+    # s_cfg already loaded above; includes prompts/backends from _config.yaml
     # Record summarizer config hash for traceability
     try:
         sum_cfg_path = ROOT / "_config.yaml"

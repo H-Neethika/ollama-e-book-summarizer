@@ -1,15 +1,14 @@
 defaults:
   prompt: bnotes
-  summary: gemma:2b       # <-- Changed from q6_k
-  general: gemma:2b       # Use same small model for general tasks too
-  title: gemma:2b         # Already updated title model
-
+  summary: gemma:2b
+  general: gemma:2b
+  title: gemma:2b
 prompts:
-  bnotes: # Default Prompt
-    prompt: Summarize this text. 
-  research: # Also for use with summary model
+  bnotes:
+    prompt: Summarize this text.
+  research:
     prompt: Does this text make any arguments? If so list them here.
-  clean:  # The following prompts should be used with a general purpose model.
+  clean:
     prompt: Repeat back this text exactly, remove only garbage characters that do
       not contribute to the flow of text. Output only the main text content, condensed
       onto a single line. If you encounter any chapter boundaries or subheadings,
@@ -21,7 +20,7 @@ prompts:
       bold with double asterisks and terms in bold also, and bullet points as `-`.
       Print the notes exactly, word-for-word, do not elaborate, do not add headings
       with #'
-  sum: # basic
+  sum:
     prompt: Comprehensive bulleted notes with headings and terms in bold.
   teacher:
     prompt: 'Write a list of questions that can be answered by 3rd graders who are
@@ -29,6 +28,16 @@ prompts:
       details, Point of view, Theme, Sequence, Elements of fiction (setting, characters,
       BME)'
   quotes:
-    prompt: 'write a few dozen quotes inspired by the provided text'
+    prompt: write a few dozen quotes inspired by the provided text
 title_generation:
   prompt: Write 8-11 words describing this text.
+backend: ollama
+transformers:
+  base_model: google/gemma-2b
+  lora_path: ./gemma2b-cnn-lora
+  max_new_tokens: 512
+  temperature: 0.5
+  top_p: 0.95
+  repetition_penalty: 1.1
+  dtype: auto
+  device: auto
