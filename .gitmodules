@@ -6,3 +6,6 @@
 	path = llm-research-summaries
 	url = https://github.com/cognitivetech/llm-research-summaries
 	branch = main
+[submodule "tools-prototype/ollama-e-book-summarizer"]
+	path = tools-prototype/ollama-e-book-summarizer
+	url = https://github.com/H-Neethika/ollama-e-book-summarizer
